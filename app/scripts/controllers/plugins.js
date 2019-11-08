@@ -121,22 +121,35 @@ class PluginsController extends EventEmitter {
   /**
    * Adds, authorizes, and runs plugins with a plugin provider.
    */
-  processRequestedPlugins (pluginNames) {
-    Promise.all(pluginNames.map(async (pluginName) => {
-      await this.add(pluginName)
-      const plugin = await this.authorize(pluginName)
-      const { sourceCode, approvedPermissions } = plugin
-      const ethereumProvider = this.setupProvider(
-        pluginName, async () => { return {name: pluginName } }, true
-      )
-      await this.run(
-        pluginName, approvedPermissions, sourceCode, ethereumProvider
-      )
-    }))
-      .catch((err) => {
+  async processRequestedPlugins (requestedPlugins) {
+
+    const pluginNames = requestedPlugins.map(
+      perm => perm.replace(/^wallet_plugin_/, '')
+    )
+
+    const added = await Promise.all(pluginNames.map(async (pluginName) => {
+      try {
+        await this.add(pluginName)
+        const plugin = await this.authorize(pluginName)
+        const { sourceCode, approvedPermissions } = plugin
+        const ethereumProvider = this.setupProvider(
+          pluginName, async () => { return {name: pluginName } }, true
+        )
+        await this.run(
+          pluginName, approvedPermissions, sourceCode, ethereumProvider
+        )
+        return pluginName
+      } catch (err) {
         // TODO: figure out what to do with this error
         console.error(`Error when adding plugin:`, err)
+      }
+    }))
+      .catch((err) => {
+        // TODO: will this ever happen?
+        console.error(`Unexpected error when adding plugins:`, err)
       })
+
+    return added ? added.filter(plugin => !!plugin) : []
   }
 
   /**

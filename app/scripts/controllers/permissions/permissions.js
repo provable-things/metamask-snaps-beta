@@ -9,7 +9,7 @@ const {
   getExternalRestrictedMethods,
   pluginRestrictedMethodDescriptions,
 } = require('./restrictedMethods')
-const createRequestMiddleware = require('./requestMiddleware')
+const createInternalMethodMiddleware = require('./internalMethodMiddleware')
 const createLoggerMiddleware = require('./loggerMiddleware')
 
 // Methods that do not require any permissions to use:
@@ -55,9 +55,10 @@ class PermissionsController {
     const { origin, isPlugin } = options
     const engine = new JsonRpcEngine()
     engine.push(this.createPluginMethodRestrictionMiddleware(isPlugin))
-    engine.push(createRequestMiddleware({
+    engine.push(createInternalMethodMiddleware({
       store: this.store,
       storeKey: METADATA_STORE_KEY,
+      handleInstallPlugins: this.handleInstallPlugins.bind(this)
     }))
     engine.push(createLoggerMiddleware({
       walletPrefix: WALLET_METHOD_PREFIX,
@@ -92,6 +93,35 @@ class PermissionsController {
 
       return next()
     })
+  }
+
+  /**
+   * @param {string} origin - The external domain id.
+   * @param {Array<string>} requestedPlugins - The names of the requested plugin permissions.
+   */
+  async handleInstallPlugins (origin, requestedPlugins) {
+
+    const existingPerms = this.permissions.getPermissionsForDomain(origin).reduce(
+      (acc, p) => {
+        acc[p.parentCapability] = true
+        return acc
+      }, {}
+    )
+
+    requestedPlugins.forEach(p => {
+      if (!existingPerms[p]) {
+        throw rpcErrors.eth.unauthorized(`Not authorized to install plugin '${p}'.`)
+      }
+    })
+
+    const installedPlugins = await this.pluginsController.processRequestedPlugins(requestedPlugins)
+
+    if (installedPlugins.length === 0) {
+      // TODO:plugins reserve error in Ethereum error space?
+      throw rpcErrors.eth.custom(4301, 'Failed to install all plugins.', requestedPlugins)
+    }
+
+    return installedPlugins
   }
 
   /**
@@ -167,13 +197,12 @@ class PermissionsController {
     const approval = this.pendingApprovals[id]
     this._closePopup && this._closePopup()
 
-    // Load any requested plugins first:
-    const pluginNames = this.pluginsFromPerms(approved.permissions)
     try {
 
-      // listen for the result of the approved permissions request,
-      // and take further action upon permissions being granted
-      this.permissions.once(id, onRequestProcessed.bind(this))
+      // TODO:plugins: perform plugin preflight check?
+      // e.g., is the plugin valid? can its manifest be fetched? is the manifest valid?
+      // not strictly necessary, but probably good UX.
+      // const pluginNames = this.pluginsFromPerms(approved.permissions)
 
       const resolve = approval.resolve
       resolve(approved.permissions)
@@ -182,17 +211,6 @@ class PermissionsController {
     } catch (reason) {
       const { reject } = approval
       reject(reason)
-    }
-
-    async function onRequestProcessed (result) {
-
-      if (result) {
-
-        // TODO: if the below call fails, should the permission for the plugin be removed?
-        // If the initial app permissions have been granted,
-        // we are free to prompt for the plugin permissions:
-        this.pluginsController.processRequestedPlugins(pluginNames)
-      }
     }
   }
 
