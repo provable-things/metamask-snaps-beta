@@ -58,7 +58,7 @@ class PermissionsController {
     engine.push(createInternalMethodMiddleware({
       store: this.store,
       storeKey: METADATA_STORE_KEY,
-      handleInstallPlugins: this.handleInstallPlugins.bind(this)
+      handleInstallPlugins: this.handleInstallPlugins.bind(this),
     }))
     engine.push(createLoggerMiddleware({
       walletPrefix: WALLET_METHOD_PREFIX,

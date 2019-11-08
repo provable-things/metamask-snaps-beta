@@ -6,7 +6,7 @@ const { errors: rpcErrors } = require('eth-json-rpc-errors')
  * Create middleware for preprocessing permissions requests.
  */
 module.exports = function createRequestMiddleware ({
-  store, storeKey, handleInstallPlugins
+  store, storeKey, handleInstallPlugins,
 }) {
   return createAsyncMiddleware(async (req, res, next) => {
 

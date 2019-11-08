@@ -82,11 +82,11 @@ module.exports = function createLoggerMiddleware ({
     let accounts
     const entries = result
       ? result.map(perm => {
-          if (perm.parentCapability === 'eth_accounts') {
-            accounts = getAccountsFromPermission(perm)
-          }
-          return perm.parentCapability
-        })
+        if (perm.parentCapability === 'eth_accounts') {
+          accounts = getAccountsFromPermission(perm)
+        }
+        return perm.parentCapability
+      })
         .reduce((acc, m) => {
           if (requestedMethods.includes(m)) {
             acc[m] = {
