@@ -1,6 +1,5 @@
-/*global Web3*/
 
-// TODO:permissions:launch remove this
+// TODO:plugins:launch remove this
 console.warn('MetaMask: You are using the experimental plugin version of MetaMask.')
 
 // need to make sure we aren't affected by overlapping namespaces
@@ -34,10 +33,8 @@ const restoreContextAfterImports = () => {
 }
 
 cleanContextForImports()
-require('web3/dist/web3.min.js')
 const log = require('loglevel')
 const LocalMessageDuplexStream = require('post-message-stream')
-const setupDappAutoReload = require('./lib/auto-reload.js')
 const MetamaskInpageProvider = require('metamask-inpage-provider')
 
 let warned = false
@@ -61,10 +58,6 @@ const inpageProvider = new MetamaskInpageProvider(metamaskStream)
 
 // set a high max listener count to avoid unnecesary warnings
 inpageProvider.setMaxListeners(100)
-
-// give the dapps control of a refresh they can toggle this off on the window.ethereum
-// this will be default true so it does not break any old apps.
-inpageProvider.autoRefreshOnNetworkChange = true
 
 // TODO:synchronous re-implement: { networkVersion, selectedAddress } = window.ethereum
 // publicConfig isn't populated until we get a message from background.
@@ -112,35 +105,3 @@ const proxiedInpageProvider = new Proxy(inpageProvider, {
 })
 
 window.ethereum = proxiedInpageProvider
-
-//
-// setup web3
-//
-
-if (typeof window.web3 !== 'undefined') {
-  throw new Error(`MetaMask detected another web3.
-     MetaMask will not work reliably with another web3 extension.
-     This usually happens if you have two MetaMasks installed,
-     or MetaMask and another web3 extension. Please remove one
-     and try again.`)
-}
-
-const web3 = new Web3(proxiedInpageProvider)
-web3.setProvider = function () {
-  log.debug('MetaMask - overrode web3.setProvider')
-}
-log.debug('MetaMask - injected web3')
-
-setupDappAutoReload(web3, inpageProvider.publicConfigStore)
-
-inpageProvider.publicConfigStore.subscribe(function (state) {
-  if (state.onboardingcomplete) {
-    window.postMessage('onboardingcomplete', '*')
-  }
-})
-
-// TODO:synchronous re-implement web3.eth.defaultAccount
-// set web3 defaultAccount
-// inpageProvider.publicConfigStore.subscribe(function (state) {
-//   web3.eth.defaultAccount = state.selectedAddress
-// })
