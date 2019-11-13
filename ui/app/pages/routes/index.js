@@ -25,6 +25,7 @@ import Settings from '../settings'
 import Authenticated from '../../helpers/higher-order-components/authenticated'
 import Initialized from '../../helpers/higher-order-components/initialized'
 import Lock from '../lock'
+import Plugin from '../plugin'
 const RestoreVaultPage = require('../keychains/restore-vault').default
 const RevealSeedConfirmation = require('../keychains/reveal-seed')
 const MobileSyncPage = require('../mobile-sync')
@@ -67,6 +68,7 @@ import {
   CONFIRM_TRANSACTION_ROUTE,
   INITIALIZE_ROUTE,
   INITIALIZE_UNLOCK_ROUTE,
+  PLUGIN_ROUTE
 } from '../../helpers/constants/routes'
 
 // enums
@@ -117,6 +119,7 @@ class Routes extends Component {
         <Authenticated path={CONFIRM_ADD_SUGGESTED_TOKEN_ROUTE} component={ConfirmAddSuggestedTokenPage} exact />
         <Authenticated path={NEW_ACCOUNT_ROUTE} component={CreateAccountPage} />
         <Authenticated path={DEFAULT_ROUTE} component={Home} exact />
+        <Authenticated path={PLUGIN_ROUTE} component={Plugin} exact />
       </Switch>
     )
 

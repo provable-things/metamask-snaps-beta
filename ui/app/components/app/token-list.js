@@ -7,6 +7,10 @@ const TokenCell = require('./token-cell.js')
 const connect = require('react-redux').connect
 const selectors = require('../../selectors/selectors')
 const log = require('loglevel')
+const { compose } = require('recompose')
+const { withRouter } = require('react-router-dom')
+const { PLUGIN_ROUTE } = require('../../helpers/constants/routes')
+const { hideSidebar } = require('../../store/actions')
 
 function mapStateToProps (state) {
   const ethTokens = state.metamask.tokens
@@ -18,6 +22,12 @@ function mapStateToProps (state) {
     pluginTokens,
     userAddress: selectors.getSelectedAddress(state),
     assetImages: state.metamask.assetImages,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    hideSidebar: () => dispatch(hideSidebar())
   }
 }
 
@@ -35,7 +45,10 @@ TokenList.contextTypes = {
   t: PropTypes.func,
 }
 
-module.exports = connect(mapStateToProps)(TokenList)
+module.exports = compose(
+  withRouter,
+  connect(mapStateToProps, mapDispatchToProps)
+)(TokenList)
 
 
 inherits(TokenList, Component)
@@ -84,17 +97,33 @@ TokenList.prototype.render = function () {
   })
   return h('div', tokens.concat(pluginTokens).map((tokenData) => {
     tokenData.image = assetImages[tokenData.address]
-    if (tokenData.customViewUrl) {
-      tokenData.onClick = this.showPluginToken.bind(this, tokenData)
+    if (tokenData.customViewUrl && !tokenData.inMetamask) {
+      tokenData.onClick = this.showPluginTokenInsideBrowser.bind(this, tokenData)
+    }
+    if (tokenData.customViewUrl && tokenData.inMetamask === true) {
+      tokenData.onClick = this.showPluginTokenInsideMetamask.bind(this, tokenData)
     }
     return h(TokenCell, tokenData)
   }))
 
 }
 
-TokenList.prototype.showPluginToken = function (tokenData) {
+TokenList.prototype.showPluginTokenInsideBrowser = function (tokenData) {
   const url = tokenData.customViewUrl
   global.platform.openWindow({ url })
+}
+
+TokenList.prototype.showPluginTokenInsideMetamask = function (tokenData) {
+  const url = tokenData.customViewUrl
+  const {
+    history,
+  } = this.props
+
+  history.push({
+    pathname: PLUGIN_ROUTE,
+    state: { url }
+  })
+  this.props.hideSidebar()
 }
 
 TokenList.prototype.message = function (body) {

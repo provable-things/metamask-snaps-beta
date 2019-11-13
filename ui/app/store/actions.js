@@ -390,6 +390,7 @@ var actions = {
   setRestoredFromThreeBoxToFalse,
   turnThreeBoxSyncingOn,
 
+  addPlugin,
   deletePlugin,
   clearPluginState,
 }
@@ -2989,6 +2990,11 @@ function setThreeBoxSyncingPermission (threeBoxSyncingAllowed) {
   }
 }
 
+function addPlugin (pluginName, sourceUrl) {
+  return () => {
+    background.addPlugin(pluginName, sourceUrl)
+  }
+}
 
 function deletePlugin (pluginName) {
   return () => {

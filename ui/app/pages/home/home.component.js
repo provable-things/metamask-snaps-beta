@@ -9,6 +9,7 @@ import WalletView from '../../components/app/wallet-view'
 import TransactionView from '../../components/app/transaction-view'
 import PermissionApproval from '../permission-approval'
 import Button from '../../components/ui/button'
+import AddPlugin from '../add-plugin'
 
 import {
   RESTORE_VAULT_ROUTE,
@@ -57,9 +58,10 @@ export default class Home extends PureComponent {
 
   state = {
     pluginToDelete: '',
+    showAddPlugin: false
   }
 
-  componentWillMount () {
+  componentWillMount() {
     const {
       history,
       unconfirmedTransactionsCount = 0,
@@ -70,7 +72,7 @@ export default class Home extends PureComponent {
     }
   }
 
-  componentDidMount () {
+  componentDidMount() {
     const {
       history,
       suggestedTokens = {},
@@ -82,7 +84,7 @@ export default class Home extends PureComponent {
     }
   }
 
-  componentDidUpdate () {
+  componentDidUpdate() {
     const {
       threeBoxSynced,
       setupThreeBox,
@@ -94,7 +96,7 @@ export default class Home extends PureComponent {
     }
   }
 
-  render () {
+  render() {
     const { t } = this.context
     const {
       forgottenPassword,
@@ -117,9 +119,16 @@ export default class Home extends PureComponent {
 
     if (permissionsRequests && permissionsRequests.length > 0) {
       return (
-        <PermissionApproval permissionsRequests = {permissionsRequests}/>
+        <PermissionApproval permissionsRequests={permissionsRequests} />
       )
     }
+
+    if (this.state.showAddPlugin) {
+      return (
+        <AddPlugin />
+      )
+    }
+    
 
     return (
       <div className="main-container">
@@ -128,7 +137,7 @@ export default class Home extends PureComponent {
             query="(min-width: 576px)"
             render={() => <WalletView />}
           />
-          { !history.location.pathname.match(/^\/confirm-transaction/)
+          {!history.location.pathname.match(/^\/confirm-transaction/)
             ? (
               <TransactionView>
                 <MultipleNotifications
@@ -153,7 +162,7 @@ export default class Home extends PureComponent {
                     {
                       shouldBeRendered: threeBoxFeatureFlagIsTrue && threeBoxLastUpdated && restoredFromThreeBox === null,
                       component: <HomeNotification
-                        descriptionText={t('restoreWalletPreferences', [ formatDate(parseInt(threeBoxLastUpdated), 'M/d/y') ])}
+                        descriptionText={t('restoreWalletPreferences', [formatDate(parseInt(threeBoxLastUpdated), 'M/d/y')])}
                         acceptText={t('restore')}
                         ignoreText={t('noThanks')}
                         infoText={t('dataBackupFoundInfo')}
@@ -169,18 +178,19 @@ export default class Home extends PureComponent {
                         key="home-privacyModeDefault"
                       />,
                     },
-                  ]}/>
+                  ]} />
                 <div>
-                  <Button onClick={() => this.props.clearPluginState()} >{ 'Delete All Plugins' }</Button>
+                  <Button onClick={() => this.setState({ showAddPlugin: true })} >{'Add Plugin'}</Button>
+                  <Button onClick={() => this.props.clearPluginState()} >{'Delete All Plugins'}</Button>
                   <Button onClick={() => {
                     this.props.clearPermissions()
                     this.props.clearPermissionsHistory()
                     alert('Permissions state cleared.')
-                  }} >{ 'Delete All Permissions' }</Button>
+                  }} >{'Delete All Permissions'}</Button>
                 </div>
               </TransactionView>
             )
-            : null }
+            : null}
         </div>
       </div>
     )
